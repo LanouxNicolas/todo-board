@@ -89,11 +89,6 @@ onUnmounted(() => {
 
 <template>
   <div class="board-wrapper">
-    <!-- En-tête mobile (Titre colonne active) -->
-    <div class="mobile-header d-mobile-only" v-if="isMobile">
-      <h2>{{ COLUMNS.find(c => c.id === activeColumnId)?.label }}</h2>
-    </div>
-
     <!-- Conteneur défilable -->
     <div 
       class="board-container" 
@@ -181,21 +176,6 @@ onUnmounted(() => {
     scroll-snap-align: start;
     scroll-snap-stop: always;
     padding-bottom: 50px; /* Marge pour les indicateurs ponctuels */
-  }
-
-  .mobile-header {
-    text-align: center;
-    padding: 12px;
-    background: #ffffff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-    flex-shrink: 0;
-  }
-  
-  .mobile-header h2 {
-    font-size: 1.1rem;
-    font-weight: 500;
-    margin: 0;
-    color: #333;
   }
 
   .mobile-indicators {
