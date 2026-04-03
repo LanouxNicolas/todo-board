@@ -26,9 +26,13 @@ const { user } = useAuth()
 const titleInput = ref(null)
 
 onMounted(() => {
-  if (titleInput.value) {
-    titleInput.value.focus()
-  }
+  // Un léger délai permet de s'assurer que le champ est prêt à recevoir le focus,
+  // particulièrement lors de l'utilisation de transitions.
+  setTimeout(() => {
+    if (titleInput.value) {
+      titleInput.value.focus()
+    }
+  }, 100)
 })
 
 const isCreate = computed(() => props.mode === 'create')
@@ -147,6 +151,7 @@ const handleSubmit = (e) => {
             v-model="formData.titre" 
             required 
             placeholder="Nom de la tâche"
+            autofocus
             @keydown.enter.prevent="handleSubmit"
           />
         </div>
