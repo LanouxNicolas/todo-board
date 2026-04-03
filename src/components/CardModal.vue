@@ -33,13 +33,24 @@ const formatDateForInput = (isoString) => {
   }
 }
 
+const CATEGORIES = [
+  { id: '', label: 'Aucune' },
+  { id: 'triangle', label: 'Triangle', color: '#2196F3' },
+  { id: 'square', label: 'Carré', color: '#795548' },
+  { id: 'circle', label: 'Rond', color: '#26A69A' },
+  { id: 'star', label: 'Étoile', color: '#9C27B0' },
+  { id: 'heart', label: 'Cœur', color: '#E53935' },
+  { id: 'dollar', label: 'Dollar', color: '#F9A825' }
+]
+
 const formData = ref({
   titre: '',
   description: '',
   dateDebut: '',
   dateFin: '',
   type: COLUMNS[0].id,
-  enCours: false
+  enCours: false,
+  categorie: ''
 })
 
 if (isCreate.value) {
@@ -53,6 +64,7 @@ if (isCreate.value) {
   formData.value.dateFin = formatDateForInput(props.card.dateFin)
   formData.value.type = props.card.type || COLUMNS[0].id
   formData.value.enCours = props.card.enCours || false
+  formData.value.categorie = props.card.categorie || ''
 }
 
 const handleOverlayClick = (e) => {
@@ -70,7 +82,8 @@ const save = () => {
     dateDebut: formData.value.dateDebut || null,
     dateFin: formData.value.dateFin || null,
     type: formData.value.type,
-    enCours: formData.value.enCours
+    enCours: formData.value.enCours,
+    categorie: formData.value.categorie
   }
 
   if (isCreate.value) {
@@ -159,6 +172,41 @@ const handleSubmit = (e) => {
               <input type="checkbox" v-model="formData.enCours" />
                En cours
             </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Catégorie</label>
+          <div class="category-picker">
+            <button
+              v-for="cat in CATEGORIES"
+              :key="cat.id"
+              type="button"
+              class="cat-btn"
+              :class="{ selected: formData.categorie === cat.id }"
+              :title="cat.label"
+              @click="formData.categorie = cat.id"
+            >
+              <span v-if="cat.id === ''" class="cat-none">–</span>
+              <svg v-else-if="cat.id === 'triangle'" width="20" height="20" viewBox="0 0 24 24">
+                <polygon points="12,3 22,21 2,21" :fill="cat.color" stroke="none"/>
+              </svg>
+              <svg v-else-if="cat.id === 'square'" width="20" height="20" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" :fill="cat.color" stroke="none"/>
+              </svg>
+              <svg v-else-if="cat.id === 'circle'" width="20" height="20" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" :fill="cat.color" stroke="none"/>
+              </svg>
+              <svg v-else-if="cat.id === 'star'" width="20" height="20" viewBox="0 0 24 24">
+                <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" :fill="cat.color" stroke="none"/>
+              </svg>
+              <svg v-else-if="cat.id === 'heart'" width="20" height="20" viewBox="0 0 24 24">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" :fill="cat.color" stroke="none"/>
+              </svg>
+              <svg v-else-if="cat.id === 'dollar'" width="20" height="20" viewBox="0 0 24 24">
+                <text x="12" y="18" text-anchor="middle" font-size="18" font-weight="bold" :fill="cat.color" font-family="sans-serif">$</text>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -333,5 +381,42 @@ const handleSubmit = (e) => {
 
 .btn-danger:hover {
   background-color: #ffebee;
+}
+
+.category-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cat-btn {
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  transition: border-color 0.2s, background-color 0.2s, transform 0.1s;
+  color: #888;
+}
+
+.cat-btn:hover {
+  background-color: rgba(0,0,0,0.05);
+  transform: scale(1.1);
+}
+
+.cat-btn.selected {
+  border-color: #555;
+  background-color: rgba(0,0,0,0.06);
+}
+
+.cat-none {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: #aaa;
 }
 </style>

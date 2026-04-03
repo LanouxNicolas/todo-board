@@ -2,6 +2,15 @@
 import { computed } from 'vue'
 import { useStore } from '../composables/useStore.js'
 
+const CATEGORIES = {
+  triangle: { color: '#2196F3' },
+  square:   { color: '#795548' },
+  circle:   { color: '#26A69A' },
+  star:     { color: '#9C27B0' },
+  heart:    { color: '#E53935' },
+  dollar:   { color: '#F9A825' }
+}
+
 const props = defineProps({
   card: {
     type: Object,
@@ -40,9 +49,13 @@ const deleteCard = () => {
 const cardStyle = computed(() => {
   return {
     borderLeft: `5px solid ${props.color}`,
-    // Fond très légèrement teinté de la couleur de la colonne si activée
     backgroundColor: props.card.enCours ? `${props.color}15` : '#ffffff'
   }
+})
+
+const categorieBadge = computed(() => {
+  const cat = props.card.categorie
+  return cat && CATEGORIES[cat] ? { id: cat, color: CATEGORIES[cat].color } : null
 })
 </script>
 
@@ -53,9 +66,32 @@ const cardStyle = computed(() => {
     :style="cardStyle"
     @click="handleEdit"
   >
+
     <div class="card-title" :title="card.titre">{{ card.titre }}</div>
     
     <div class="card-actions">
+      <!-- Badge catégorie -->
+      <div v-if="categorieBadge" class="cat-badge" :title="categorieBadge.id">
+        <svg v-if="categorieBadge.id === 'triangle'" width="18" height="18" viewBox="0 0 24 24">
+          <polygon points="12,3 22,21 2,21" :fill="categorieBadge.color" stroke="none"/>
+        </svg>
+        <svg v-else-if="categorieBadge.id === 'square'" width="18" height="18" viewBox="0 0 24 24">
+          <rect x="3" y="3" width="18" height="18" rx="2" :fill="categorieBadge.color" stroke="none"/>
+        </svg>
+        <svg v-else-if="categorieBadge.id === 'circle'" width="18" height="18" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" :fill="categorieBadge.color" stroke="none"/>
+        </svg>
+        <svg v-else-if="categorieBadge.id === 'star'" width="18" height="18" viewBox="0 0 24 24">
+          <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" :fill="categorieBadge.color" stroke="none"/>
+        </svg>
+        <svg v-else-if="categorieBadge.id === 'heart'" width="18" height="18" viewBox="0 0 24 24">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" :fill="categorieBadge.color" stroke="none"/>
+        </svg>
+        <svg v-else-if="categorieBadge.id === 'dollar'" width="18" height="18" viewBox="0 0 24 24">
+          <text x="12" y="18" text-anchor="middle" font-size="18" font-weight="bold" :fill="categorieBadge.color" font-family="sans-serif">$</text>
+        </svg>
+      </div>
+
       <!-- Bouton "En cours" (Play / Pause) -->
       <button 
         class="action-btn play-btn" 
@@ -84,19 +120,6 @@ const cardStyle = computed(() => {
         </svg>
       </button>
 
-      <!-- Bouton Abandonner -->
-      <button 
-        class="action-btn delete-btn" 
-        title="Abandonner la tâche"
-        @click.stop="deleteCard"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="3 6 5 6 21 6"></polyline>
-          <path d="M19 6V20a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-          <line x1="10" y1="11" x2="10" y2="17"></line>
-          <line x1="14" y1="11" x2="14" y2="17"></line>
-        </svg>
-      </button>
     </div>
   </div>
 </template>
@@ -114,7 +137,16 @@ const cardStyle = computed(() => {
   justify-content: space-between;
   gap: 8px;
   transition: all 0.2s ease;
-  min-height: 44px; /* Rend le tout resserré et lisible */
+  min-height: 44px;
+  position: relative;
+}
+
+.cat-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 .card-item:hover {
@@ -136,7 +168,7 @@ const cardStyle = computed(() => {
 .card-actions {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   flex-shrink: 0;
 }
 
@@ -144,7 +176,7 @@ const cardStyle = computed(() => {
   background: none;
   border: none;
   cursor: pointer;
-  padding: 6px;
+  padding: 4px;
   border-radius: 50%;
   display: flex;
   align-items: center;
