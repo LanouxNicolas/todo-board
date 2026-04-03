@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useStore } from '../composables/useStore.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const CATEGORIES = {
   triangle: { color: '#2196F3' },
@@ -24,24 +25,28 @@ const props = defineProps({
 
 const emit = defineEmits(['edit'])
 const store = useStore()
+const { user } = useAuth()
 
 const handleEdit = () => {
   emit('edit', props.card.id)
 }
 
 const toggleEnCours = () => {
-  store.toggleEnCours(props.card.id)
+  const uid = user.value?.uid
+  if (uid) store.toggleEnCours(uid, props.card.id)
 }
 
 const closeCard = () => {
-  if (confirm('Voulez-vous vraiment clôturer cette tâche ?')) {
-    store.closeCard(props.card.id)
+  const uid = user.value?.uid
+  if (uid && confirm('Voulez-vous vraiment clôturer cette tâche ?')) {
+    store.closeCard(uid, props.card.id)
   }
 }
 
 const deleteCard = () => {
-  if (confirm('Voulez-vous vraiment abandonner et supprimer cette tâche ?')) {
-    store.deleteCard(props.card.id)
+  const uid = user.value?.uid
+  if (uid && confirm('Voulez-vous vraiment abandonner et supprimer cette tâche ?')) {
+    store.deleteCard(uid, props.card.id)
   }
 }
 
@@ -57,6 +62,22 @@ const categorieBadge = computed(() => {
   const cat = props.card.categorie
   return cat && CATEGORIES[cat] ? { id: cat, color: CATEGORIES[cat].color } : null
 })
+
+const formattedStartDate = computed(() => {
+  if (!props.card.dateDebut) return null
+  // Format YYYY-MM-DD
+  const parts = props.card.dateDebut.split('-')
+  if (parts.length !== 3) return null
+
+  const day = parseInt(parts[2], 10)
+  const monthIndex = parseInt(parts[1], 10) - 1
+  const monthNames = [
+    'Janv', 'Févr', 'Mars', 'Avril', 'Mai', 'Juin',
+    'Juil', 'Août', 'Sept', 'Oct', 'Nov', 'Déc'
+  ]
+  const month = monthNames[monthIndex] || ''
+  return `${day} ${month}`
+})
 </script>
 
 <template>
@@ -67,7 +88,12 @@ const categorieBadge = computed(() => {
     @click="handleEdit"
   >
 
-    <div class="card-title" :title="card.titre">{{ card.titre }}</div>
+    <div class="card-title" :title="card.titre">
+      <span v-if="formattedStartDate" class="card-date-prefix">
+        <strong>{{ formattedStartDate }}  </strong> :
+      </span>
+      {{ card.titre }}
+    </div>
     
     <div class="card-actions">
       <!-- Badge catégorie -->

@@ -20,6 +20,7 @@ export const COLUMNS = [
  *   type: string (une des valeurs de l'enum COLUMNS.id),
  *   enCours: boolean (default false),
  *   dateCloture: string (format ISO) | null,
+ *   categorie: string | '',
  *   ordre: number (position verticale dans la colonne)
  * }
  */
@@ -33,6 +34,7 @@ export const createCard = (data) => {
     type: data.type || COLUMNS[0].id,
     enCours: data.enCours || false,
     dateCloture: data.dateCloture || null,
+    categorie: data.categorie || '',
     ordre: data.ordre !== undefined ? data.ordre : 0
   }
 }

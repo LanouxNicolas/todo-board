@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { COLUMNS } from '../utils/constants.js'
 import { useStore } from '../composables/useStore.js'
 import { useAuth } from '../composables/useAuth.js'
@@ -23,6 +23,13 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 const store = useStore()
 const { user } = useAuth()
+const titleInput = ref(null)
+
+onMounted(() => {
+  if (titleInput.value) {
+    titleInput.value.focus()
+  }
+})
 
 const isCreate = computed(() => props.mode === 'create')
 
@@ -134,11 +141,13 @@ const handleSubmit = (e) => {
         <div class="form-group">
           <label for="titre">Titre *</label>
           <input 
+            ref="titleInput"
             type="text" 
             id="titre" 
             v-model="formData.titre" 
             required 
             placeholder="Nom de la tâche"
+            @keydown.enter.prevent="handleSubmit"
           />
         </div>
 
