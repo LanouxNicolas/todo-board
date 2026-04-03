@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import draggable from 'vuedraggable'
 import { useStore } from '../composables/useStore.js'
+import { useAuth } from '../composables/useAuth.js'
 import CardItem from './CardItem.vue'
 
 const props = defineProps({
@@ -17,20 +18,22 @@ const props = defineProps({
 
 const emit = defineEmits(['open-create', 'open-edit'])
 const store = useStore()
+const { user } = useAuth()
 
 const localCards = computed({
   get: () => props.cards,
   set: (newCards) => {
+    const uid = user.value?.uid
+    if (!uid) return
     // Si une carte vient d'une autre colonne, on met à jour son type
     newCards.forEach((card, index) => {
       if (card.type !== props.column.id) {
-        store.moveCard(card.id, props.column.id, index)
+        store.moveCard(uid, card.id, props.column.id, index)
       }
     })
-    
     // On re-calcule et on impose l'ordre à toutes les cartes
     const orderedIds = newCards.map(c => c.id)
-    store.reorderCards(props.column.id, orderedIds)
+    store.reorderCards(uid, props.column.id, orderedIds)
   }
 })
 

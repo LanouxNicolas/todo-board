@@ -1,106 +1,127 @@
-import { reactive, watch } from 'vue'
-import { STORAGE_KEY, createCard } from '../utils/constants.js'
+import { reactive, readonly } from 'vue'
+import {
+  collection,
+  doc,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  query,
+  orderBy
+} from 'firebase/firestore'
+import { db } from '../firebase.js'
+import { createCard } from '../utils/constants.js'
 
-// Store singleton global state
+// ─── Singleton state ──────────────────────────────────────────────────────────
 const state = reactive({
-  cards: []
+  cards: [],
+  loading: true,
+  error: null
 })
 
-// Initialize from localStorage
-const storedData = localStorage.getItem(STORAGE_KEY)
-if (storedData) {
-  try {
-    state.cards = JSON.parse(storedData)
-  } catch (err) {
-    console.error("Failed to parse localStorage data", err)
-    state.cards = []
-  }
-}
+let unsubscribe = null
 
-// Automatically save to localStorage on changes
-watch(
-  () => state.cards,
-  (newCards) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newCards))
-  },
-  { deep: true }
-)
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+/** Returns the Firestore collection reference for the given user */
+const cardsCol = (uid) => collection(db, 'users', uid, 'cards')
 
+/** Returns the Firestore doc reference for a specific card */
+const cardDoc = (uid, id) => doc(db, 'users', uid, 'cards', id)
+
+// ─── Public composable ────────────────────────────────────────────────────────
 export function useStore() {
-  const getCardsByType = (type) => {
-    return state.cards
-      .filter(c => c.type === type && !c.dateCloture)
-      .sort((a, b) => a.ordre - b.ordre)
-  }
-
-  const getClosedCards = () => {
-    return state.cards
-      .filter(c => c.dateCloture)
-      .sort((a, b) => new Date(b.dateCloture) - new Date(a.dateCloture))
-  }
-
-  const addCard = (cardData) => {
-    const newCard = createCard(cardData)
-    // Put at the end of the column
-    const cardsInColumn = getCardsByType(newCard.type)
-    newCard.ordre = cardsInColumn.length > 0 ? Math.max(...cardsInColumn.map(c => c.ordre)) + 1 : 0
-    state.cards.push(newCard)
-  }
-
-  const updateCard = (id, updates) => {
-    const index = state.cards.findIndex(c => c.id === id)
-    if (index !== -1) {
-      state.cards[index] = { ...state.cards[index], ...updates }
-    }
-  }
-
-  const toggleEnCours = (id) => {
-    const card = state.cards.find(c => c.id === id)
-    if (card) {
-      card.enCours = !card.enCours
-    }
-  }
-
-  const closeCard = (id) => {
-    const card = state.cards.find(c => c.id === id)
-    if (card) {
-      card.dateCloture = new Date().toISOString()
-    }
-  }
-
-  const reopenCard = (id) => {
-    const card = state.cards.find(c => c.id === id)
-    if (card) {
-      card.dateCloture = null
-    }
-  }
-
-  const moveCard = (id, newType, newOrdre) => {
-    const card = state.cards.find(c => c.id === id)
-    if (card) {
-      card.type = newType
-      card.ordre = newOrdre
-    }
-  }
-
-  const reorderCards = (type, orderedIds) => {
-    orderedIds.forEach((id, index) => {
-      const card = state.cards.find(c => c.id === id && c.type === type)
-      if (card) {
-        card.ordre = index
+  /**
+   * Start a real-time listener for the authenticated user's cards.
+   * Call this once from App.vue after the user signs in.
+   * Automatically replaces any previous active subscription.
+   */
+  const startListening = (uid) => {
+    stopListening()
+    state.loading = true
+    const q = query(cardsCol(uid), orderBy('ordre'))
+    unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        state.cards = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }))
+        state.loading = false
+      },
+      (err) => {
+        console.error('[useStore] Firestore error:', err)
+        state.error = err.message
+        state.loading = false
       }
-    })
+    )
   }
 
-  const deleteCard = (id) => {
-    const index = state.cards.findIndex(c => c.id === id)
-    if (index !== -1) {
-      state.cards.splice(index, 1)
+  /**
+   * Stop the real-time listener and clear the local state.
+   * Call this when the user signs out.
+   */
+  const stopListening = () => {
+    if (unsubscribe) {
+      unsubscribe()
+      unsubscribe = null
     }
+    state.cards = []
+    state.loading = false
+    state.error = null
   }
+
+  // ── Read helpers ─────────────────────────────────────────────────────────
+  const getCardsByType = (type) =>
+    state.cards
+      .filter((c) => c.type === type && !c.dateCloture)
+      .sort((a, b) => a.ordre - b.ordre)
+
+  const getClosedCards = () =>
+    state.cards
+      .filter((c) => c.dateCloture)
+      .sort((a, b) => new Date(b.dateCloture) - new Date(a.dateCloture))
+
+  // ── Write helpers (all return Firestore promises) ─────────────────────────
+  const addCard = async (uid, cardData) => {
+    const cardsInColumn = getCardsByType(cardData.type)
+    const newOrdre =
+      cardsInColumn.length > 0
+        ? Math.max(...cardsInColumn.map((c) => c.ordre)) + 1
+        : 0
+    const newCard = createCard({ ...cardData, ordre: newOrdre })
+    // id is generated by Firestore – remove the local one we created
+    const { id: _localId, ...firestoreData } = newCard
+    await addDoc(cardsCol(uid), firestoreData)
+  }
+
+  const updateCard = (uid, id, updates) =>
+    updateDoc(cardDoc(uid, id), updates)
+
+  const toggleEnCours = (uid, id) => {
+    const card = state.cards.find((c) => c.id === id)
+    if (!card) return
+    return updateDoc(cardDoc(uid, id), { enCours: !card.enCours })
+  }
+
+  const closeCard = (uid, id) =>
+    updateDoc(cardDoc(uid, id), { dateCloture: new Date().toISOString() })
+
+  const reopenCard = (uid, id) =>
+    updateDoc(cardDoc(uid, id), { dateCloture: null })
+
+  const moveCard = (uid, id, newType, newOrdre) =>
+    updateDoc(cardDoc(uid, id), { type: newType, ordre: newOrdre })
+
+  const reorderCards = (uid, type, orderedIds) => {
+    const promises = orderedIds.map((id, index) =>
+      updateDoc(cardDoc(uid, id), { ordre: index })
+    )
+    return Promise.all(promises)
+  }
+
+  const deleteCard = (uid, id) => deleteDoc(cardDoc(uid, id))
 
   return {
-    state,
+    state: readonly(state),
+    startListening,
+    stopListening,
     getCardsByType,
     getClosedCards,
     addCard,
@@ -113,4 +134,3 @@ export function useStore() {
     deleteCard
   }
 }
-

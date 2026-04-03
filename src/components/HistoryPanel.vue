@@ -2,9 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { COLUMNS } from '../utils/constants.js'
 import { useStore } from '../composables/useStore.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const emit = defineEmits(['close'])
 const store = useStore()
+const { user } = useAuth()
 
 const closedCards = computed(() => store.getClosedCards())
 
@@ -46,7 +48,8 @@ const getColumnColor = (typeId) => {
 }
 
 const reopen = (id) => {
-  store.reopenCard(id)
+  const uid = user.value?.uid
+  if (uid) store.reopenCard(uid, id)
 }
 
 const closePanel = () => {

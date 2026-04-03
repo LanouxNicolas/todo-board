@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { COLUMNS } from '../utils/constants.js'
 import { useStore } from '../composables/useStore.js'
+import { useAuth } from '../composables/useAuth.js'
 
 const props = defineProps({
   card: {
@@ -21,6 +22,7 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 const store = useStore()
+const { user } = useAuth()
 
 const isCreate = computed(() => props.mode === 'create')
 
@@ -75,6 +77,8 @@ const handleOverlayClick = (e) => {
 
 const save = () => {
   if (!formData.value.titre.trim()) return
+  const uid = user.value?.uid
+  if (!uid) return
 
   const cardData = {
     titre: formData.value.titre,
@@ -87,9 +91,9 @@ const save = () => {
   }
 
   if (isCreate.value) {
-    store.addCard(cardData)
+    store.addCard(uid, cardData)
   } else {
-    store.updateCard(props.card.id, cardData)
+    store.updateCard(uid, props.card.id, cardData)
   }
   
   emit('close')
@@ -100,8 +104,9 @@ const cancel = () => {
 }
 
 const remove = () => {
-  if (!isCreate.value && confirm('Voulez-vous vraiment supprimer cette tâche ?')) {
-    store.deleteCard(props.card.id)
+  const uid = user.value?.uid
+  if (!isCreate.value && uid && confirm('Voulez-vous vraiment supprimer cette tâche ?')) {
+    store.deleteCard(uid, props.card.id)
     emit('close')
   }
 }
