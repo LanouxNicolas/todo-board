@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Firebase project configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyBmyD5icWdYgfrS-ggqT3T63JBVtPyCPJ8",
-    authDomain: "multicolumn-todolist.firebaseapp.com",
-    projectId: "multicolumn-todolist",
-    storageBucket: "multicolumn-todolist.firebasestorage.app",
-    messagingSenderId: "405843764706",
-    appId: "1:405843764706:web:5c1b947645f854040085bb"
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase
